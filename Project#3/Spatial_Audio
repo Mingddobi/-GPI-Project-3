@@ -1,0 +1,78 @@
+import pygame
+import numpy as np
+
+pygame.init()
+
+# Pygame 초기화 및 오디오 초기화
+pygame.mixer.init()
+
+# 오디오 파일 로딩
+sound_file = "Vanze - Survive (feat. Neon Dreams).wav"
+pygame.mixer.music.load(sound_file)
+
+# 오디오 파라미터 설정
+sample_rate = 44100
+pygame.mixer.pre_init(sample_rate, -16, 2, 1024)
+
+# 화면 초기화
+screen = pygame.display.set_mode((800, 600))
+pygame.display.set_caption("Spatial Audio Visualization")
+
+# 오디오 위치 초기화
+audio_position = [400, 300]
+audio_velocity = [1, 1]
+
+# 파란색 원 위치(듣는 곳) 초기화
+blue_circle_position = [400, 500]
+
+# 트랙(오디오 위치가 움직이는 원) 설정
+track_radius = 150
+angle_audio = 0
+
+clock = pygame.time.Clock()
+
+# 음악 재생 시작
+pygame.mixer.music.play(-1)
+
+# 빨간 원 크기 초기화
+red_circle_radius = 20
+
+while True:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            quit()
+
+    # 화면을 하얀색으로 채우기
+    screen.fill((255, 255, 255))
+
+    # 트랙 상에서의 새로운 위치 계산
+    angle_audio += np.radians(1)
+    audio_position[0] = 400 + int(track_radius * np.cos(angle_audio))
+    audio_position[1] = 300 + int(track_radius * np.sin(angle_audio))
+
+    # 빨간 원과 파란 원 사이의 거리 계산
+    distance_blue_red = np.sqrt((audio_position[0] - blue_circle_position[0])**2 + (audio_position[1] - blue_circle_position[1])**2)
+
+    # 거리에 따라 소리 크기 조절
+    volume = max(1 - distance_blue_red / 300, 0.1)
+    if distance_blue_red < 50:
+        volume *= 2  # 빨간 원과 파란 원이 가까우면 소리 크기를 2배로 증가
+
+    # 빨간 원 크기 조절 (음악 리듬에 따라)
+    red_circle_radius = int(20 + 5 * np.sin(pygame.mixer.music.get_pos() / 80.7))
+
+    # 오디오 위치에 따라 빨간색 원 그리기
+    pygame.draw.circle(screen, (255, 0, 0), (int(audio_position[0]), int(audio_position[1])), red_circle_radius)
+
+    # 파란색 원 그리기
+    pygame.draw.circle(screen, (0, 0, 255), (int(blue_circle_position[0]), int(blue_circle_position[1])), 20)
+
+    # 스테레오 파라미터 설정
+    pygame.mixer.music.set_volume(volume)
+
+    # 화면 업데이트
+    pygame.display.flip()
+
+    # 프레임 속도 조절
+    clock.tick(60)
